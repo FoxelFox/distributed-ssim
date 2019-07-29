@@ -10,7 +10,7 @@ import {SSIMServer} from "./ssim";
 
 new SSIMServer(io(http));
 
-app.use('/', expressStaticGzip(path.join(__dirname + '/../client'), {
+app.use('/', expressStaticGzip(path.join(__dirname + '/../'), {
 	enableBrotli: true
 }));
 
