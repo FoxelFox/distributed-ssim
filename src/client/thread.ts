@@ -6,6 +6,7 @@ const worker = {
 
 	work(items, apps, images) {
 		let csv = "";
+		let result = {};
 		for (const item of items) {
 			const values = [];
 
@@ -14,14 +15,10 @@ const worker = {
 					values.push({key: y, value: ssim.compare(images[item], images[y]).ssim});
 				}
 			}
-			const bestMatches = values.sort((a, b) => b.value - a.value).slice(0, 16);
-
-			for (const match of bestMatches) {
-				csv += [item, match.key, match.value].join("|") + "\n";
-			}
+			result[items] = values.sort((a, b) => b.value - a.value).slice(0, 16);
 		}
 
-		return csv;
+		return result;
 	}
 };
 

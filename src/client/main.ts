@@ -12,7 +12,7 @@ async function run() {
 	console.log(location + "/32.jpg");
 	const data = await loadImageBuffer(location + "32.jpg", "OffscreenCanvas"in window);
 	const identifiersRes = await fetch("identifiers.json");
-	const apps = await identifiersRes.json();
+	let apps = await identifiersRes.json();
 
 	const images = {};
 
@@ -41,8 +41,27 @@ async function run() {
 			const items = apps.slice(index, index + 1);
 			pool.queue(async thread => {
 				const result = await thread.work(items, apps, images);
-				csv += result;
-				document.body.innerText = csv
+
+
+				for(const id in result) {
+					console.log(id);
+					const matchImages = [images[id].data];
+					const div = document.createElement("div");
+					div.style.height = "40px";
+					createCanvasImage(images[id].data, div, "rgb(0,255,0)");
+
+
+					for (const match of result[id]) {
+
+
+						const color = "rgb(" + 2.0 * (1 - match.value) * 255 + "," + 2.0 * match.value * 255 + ",0)";
+						createCanvasImage(images[match.key].data, div, color);
+
+					}
+
+					document.body.appendChild(div);
+
+				}
 			});
 			index += 1;
 
@@ -62,5 +81,20 @@ async function run() {
 
 }
 
+function createCanvasImage(data, parent,color) {
+	const resultImage = new Uint8ClampedArray(data);
+
+	const canvas = document.createElement('canvas');
+	canvas.width  = width;
+	canvas.height = height;
+	canvas.style.borderColor = color;
+	canvas.style.borderStyle = "solid";
+	canvas.style.borderWidth = "2px";
+	canvas.style.margin = "2px";
+	const ctx = canvas.getContext("2d");
+
+	ctx.putImageData(new ImageData(resultImage, width , height), 0, 0);
+	parent.appendChild(canvas);
+}
 
 run();
