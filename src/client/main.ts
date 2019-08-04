@@ -48,16 +48,19 @@ async function run() {
 					const matchImages = [images[id].data];
 					const div = document.createElement("div");
 					div.style.height = "40px";
-					createCanvasImage(images[id].data, div, "rgb(0,255,0)");
 
+					createCanvasImage(images[id].data, div, "rgb(" + 2.0 * (1 - result[id][0].value) * 255 + "," + 2.0 * result[id][0].value * 255 + ",0)");
 
+					let sum = 0;
+					let i = 2;
 					for (const match of result[id]) {
-
-
 						const color = "rgb(" + 2.0 * (1 - match.value) * 255 + "," + 2.0 * match.value * 255 + ",0)";
 						createCanvasImage(images[match.key].data, div, color);
-
+						sum += (match.value + 1) / i;
+						i *= 2;
 					}
+
+					div.style.order = Math.floor(sum * 100000).toString();
 
 					document.body.appendChild(div);
 
