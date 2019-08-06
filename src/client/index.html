@@ -3,9 +3,22 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Title</title>
-	<script src="main.js"></script>
 </head>
-<body style="margin: 0; background-color: black; display: flex; flex-direction: column-reverse;">
-	<app-root></app-root>
+<body style="margin: 0; background-color: black; color: white">
+
+	<div id="login" hidden>
+		<label style="color: white">
+			Name
+			<input id="name">
+		</label>
+
+		<button onclick="start()">OK</button>
+	</div>
+
+	<div id="info" style="margin: 8px;"></div>
+	<div id="work"></div>
+
+
 </body>
+<script src="main.js"></script>
 </html>

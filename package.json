@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc -p src/tsconfig.json && cp src/client/index.html dist/index.html",
     "start": "npm run build && node dist/server/main.js",
-    "webpack": "webpack --mode production --config webpack.conf.js"
+    "webpack": "webpack --mode production --config webpack.conf.js",
+    "webpack-w": "webpack --mode production --config webpack.conf.js -w"
   },
   "repository": {
     "type": "git",
@@ -35,6 +36,6 @@
     "webpack-cli": "^3.3.6"
   },
   "devDependencies": {
-    "@foxel_fox/glib": "^0.0.10"
+    "@foxel_fox/glib": "^0.0.13"
   }
 }

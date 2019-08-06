@@ -1,86 +1,139 @@
 import { spawn, Thread, Worker, Pool } from "threads"
 import {SSIMWorker} from "./thread";
-import {loadImageBuffer} from "@foxel_fox/glib";
-import * as fs from "fs";
+import {loadImageBuffer} from "@foxel_fox/glib/lib/image-loader";
+import * as io from "socket.io-client";
+const socket = io();
 
 const width = 32;
 const height = 32;
 const channels = 4;
 const bytesPerImage = width * height * channels;
+const infoDIV = document.getElementById("info");
+const workDIV = document.getElementById("work");
+const pool = Pool(() => spawn<SSIMWorker>(new Worker("./thread")));
+var data;
+var identifiersRes;
+var apps;
 
-async function run() {
-	console.log(location + "/32.jpg");
-	const data = await loadImageBuffer(location + "32.jpg", "OffscreenCanvas"in window);
-	const identifiersRes = await fetch("identifiers.json");
-	let apps = await identifiersRes.json();
+workDIV.style.display = "flex";
+workDIV.style.flexDirection = "column-reverse";
 
-	const images = {};
+init().then(() => {
+	document.getElementById("login").hidden = false;
+	window["start"] = () => {
+		document.getElementById("login").hidden = true;
+		socket.emit("login", {
+			name: (<any>document.getElementById("name")).value,
+			threads: navigator.hardwareConcurrency
+		});
+	};
+});
 
-	let i = 0;
-	for (const id of apps) {
-		const startIndex = i * bytesPerImage;
-		images[id] = {
-			data: data.slice(startIndex, startIndex + bytesPerImage),
-			width,
-			height,
-			channels
-		};
-		i++
+
+
+socket.on("work", function(work) {
+	console.log(work);
+	run(work).then((results) => {
+		socket.emit("results", results);
+	})
+});
+
+socket.on("info", (info) => {
+	if (infoDIV.firstChild) {
+		infoDIV.removeChild(infoDIV.firstChild);
 	}
 
-	let csv = "";
+	const div = document.createElement("div");
+	const work = document.createElement("span");
+	work.innerText = "work: \t" + info.workDone + " / " + info.workTotal + " | " + (info.workDone / info.workTotal * 100).toFixed(2) + "%";
 
-	const count = apps.length;
-	const pool = Pool(() => spawn<SSIMWorker>(new Worker("./thread")));
+	const stats = document.createElement("div");
+	stats.style.display = "flex";
+	stats.style.flexDirection = "column-reverse";
 
-	let results = [];
+	for (const name in info.resultStatistic) {
+		const span = document.createElement("span");
+		span.innerText = info.resultStatistic[name].contributions + "\t" + name;
+		span.style.order = info.resultStatistic[name].contributions;
+		stats.appendChild(span);
+	}
 
-	try {
-		let index = 0;
-		while (index < apps.length) {
-			const items = apps.slice(index, index + 1);
-			pool.queue(async thread => {
-				const result = await thread.work(items, apps, images);
+	div.appendChild(stats);
+	div.appendChild(work);
+	infoDIV.appendChild(div);
+
+});
+
+function run(work: string[]) {
+	return new Promise(async (resolve) => {
+		const images = {};
+
+		let i = 0;
+		for (const id of apps) {
+			const startIndex = i * bytesPerImage;
+			images[id] = {
+				data: data.slice(startIndex, startIndex + bytesPerImage),
+				width,
+				height,
+				channels
+			};
+			i++
+		}
+
+		let csv = "";
+
+		const count = apps.length;
 
 
-				for(const id in result) {
-					console.log(id);
-					const matchImages = [images[id].data];
-					const div = document.createElement("div");
-					div.style.height = "40px";
+		let results = [];
 
-					createCanvasImage(images[id].data, div, "rgb(" + 2.0 * (1 - result[id][0].value) * 255 + "," + 2.0 * result[id][0].value * 255 + ",0)");
+		try {
+			while (work.length) {
+				const items = work.splice(0, 1);
 
-					let sum = 0;
-					let i = 2;
-					for (const match of result[id]) {
-						const color = "rgb(" + 2.0 * (1 - match.value) * 255 + "," + 2.0 * match.value * 255 + ",0)";
-						createCanvasImage(images[match.key].data, div, color);
-						sum += (match.value + 1) / i;
-						i *= 2;
+				pool.queue(async thread => {
+					const result = await thread.work(items, apps, images);
+
+
+					for(const id in result) {
+						console.log(id);
+						const matchImages = [images[id].data];
+						const div = document.createElement("div");
+						div.style.height = "40px";
+
+						createCanvasImage(images[id].data, div, "rgb(" + 2.0 * (1 - result[id][0].value) * 255 + "," + 2.0 * result[id][0].value * 255 + ",0)");
+
+						let sum = 0;
+						let i = 2;
+						for (const match of result[id]) {
+							const color = "rgb(" + 2.0 * (1 - match.value) * 255 + "," + 2.0 * match.value * 255 + ",0)";
+							createCanvasImage(images[match.key].data, div, color);
+							sum += (match.value + 1) / i;
+							i *= 2;
+						}
+
+						div.style.order = Math.floor(sum * 100000).toString();
+
+						workDIV.appendChild(div);
+
 					}
+					resolve(result);
+				});
 
-					div.style.order = Math.floor(sum * 100000).toString();
 
-					document.body.appendChild(div);
+			}
+		} catch (e) {
+			console.log(e);
+			// fuck it
+		}
 
-				}
-			});
-			index += 1;
+		try {
+			await pool.completed();
+			await pool.terminate();
+		} catch (e) {
 
 		}
-	} catch (e) {
-		console.log(e);
-		// fuck it
-	}
-
-	try {
-		await pool.completed();
-		await pool.terminate();
-	} catch (e) {
-
-	}
-
+	});
 
 }
 
@@ -100,4 +153,8 @@ function createCanvasImage(data, parent,color) {
 	parent.appendChild(canvas);
 }
 
-run();
+async function init() {
+	data = await loadImageBuffer(location + "32.jpg", "OffscreenCanvas"in window);
+	identifiersRes = await fetch("identifiers.json");
+	apps = await identifiersRes.json();
+}
