@@ -85,15 +85,20 @@ function run(work: string[]) {
 		const count = apps.length;
 
 
-		let results = [];
+		let results = {};
 
 		try {
+			let finishedWork = 0;
+			const workTotal = work.length;
 			while (work.length) {
 				const items = work.splice(0, 1);
 
 				pool.queue(async thread => {
 					const result = await thread.work(items, apps, images);
 
+					for (const key in result) {
+						results[key] = result[key];
+					}
 
 					for(const id in result) {
 						console.log(id);
@@ -117,7 +122,11 @@ function run(work: string[]) {
 						workDIV.appendChild(div);
 
 					}
-					resolve(result);
+
+					if(++finishedWork == workTotal) {
+						resolve(results);
+					}
+
 				});
 
 

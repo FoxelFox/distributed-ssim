@@ -13,6 +13,6 @@ app.use('/', expressStaticGzip(path.join(__dirname + '/../'), {
 
 const server = http.createServer(app);
 
-server.listen(3000);
+server.listen(3001);
 
 new SSIMServer(require("socket.io")(server));

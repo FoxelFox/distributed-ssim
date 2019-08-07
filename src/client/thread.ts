@@ -15,7 +15,7 @@ const worker = {
 					values.push({key: y, value: ssim.compare(images[item], images[y]).ssim});
 				}
 			}
-			result[items] = values.sort((a, b) => b.value - a.value).slice(0, 16);
+			result[item] = values.sort((a, b) => b.value - a.value).slice(0, 16);
 		}
 
 		return result;
