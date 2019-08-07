@@ -100,6 +100,7 @@ function run(work: string[]) {
 						results[key] = result[key];
 					}
 
+					/**
 					for(const id in result) {
 						console.log(id);
 						const matchImages = [images[id].data];
@@ -122,6 +123,7 @@ function run(work: string[]) {
 						workDIV.appendChild(div);
 
 					}
+					 */
 
 					if(++finishedWork == workTotal) {
 						resolve(results);
