@@ -98,14 +98,17 @@ export class SSIMServer {
 							subCSV += [key, match.key, match.value].join("|") + "\n";
 						} else {
 							valid = false;
+							break;
 						}
 					}
 
 					if (valid) {
 						contributions++;
 						csv += subCSV;
+						work.splice(work.indexOf(key), 1);
+					} else {
+						ids.push(key);
 					}
-					work.splice(work.indexOf(key), 1);
 				}
 
 				resultStatistic[name].contributions += contributions; // obbi fix 2
