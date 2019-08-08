@@ -10,6 +10,13 @@ export class SSIMServer {
 	) {
 
 		let ids = JSON.parse(fs.readFileSync("dist/identifiers.json").toString());
+
+		const validIds = {};
+
+		for (const id of ids) {
+			validIds[id] = true;
+		}
+
 		try {
 			csv = fs.readFileSync("results.csv").toString();
 		} catch (e) {
@@ -20,6 +27,8 @@ export class SSIMServer {
 		lines = lines.splice(1, lines.length);
 		const workTotal = ids.length;
 		let workDone = 0;
+
+
 
 		for(const line of lines) {
 			const v = line.split("|");
@@ -62,7 +71,8 @@ export class SSIMServer {
 			};
 
 			socket.on("login", (user) => {
-				name = user.name.slice(0, 64);
+
+				name = user.name.slice(0, 64); // obbi fix 1
 				threads = user.threads;
 				console.log(name, "logged in with", user.threads, "threads");
 				sendWork();
@@ -77,16 +87,32 @@ export class SSIMServer {
 						contributions: 0
 					}
 				}
-				resultStatistic[name].contributions += threads;
 
+				let contributions = 0;
+				let subCSV = "";
 				for (let key in results) {
+					let valid = true;
 					for (let match of results[key]) {
-						csv += [key, match.key, match.value].join("|") + "\n";
+						const value = parseFloat(match.value);
+						if (validIds[key] && validIds[match.key] && !isNaN(value)) {
+							subCSV += [key, match.key, match.value].join("|") + "\n";
+						} else {
+							valid = false;
+						}
+					}
+
+					if (valid) {
+						contributions++;
+						csv += subCSV;
 					}
 					work.splice(work.indexOf(key), 1);
 				}
+
+				resultStatistic[name].contributions += contributions; // obbi fix 2
+				workDone += contributions;
+				threads = contributions;
+
 				sendWork();
-				workDone += threads;
 				sendStatus();
 			});
 
