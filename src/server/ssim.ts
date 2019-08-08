@@ -10,8 +10,26 @@ export class SSIMServer {
 	) {
 
 		let ids = JSON.parse(fs.readFileSync("dist/identifiers.json").toString());
+		try {
+			csv = fs.readFileSync("results.csv").toString();
+		} catch (e) {
+			// ignore
+		}
+
+		let lines = csv.split("\n");
+		lines = lines.splice(1, lines.length);
 		const workTotal = ids.length;
 		let workDone = 0;
+
+		for(const line of lines) {
+			const v = line.split("|");
+			const p = v[0];
+			let i = ids.indexOf(p);
+			if (i !== -1) {
+				workDone++;
+				ids.splice(i, 1);
+			}
+		}
 
 		let resultStatistic = {};
 
@@ -44,9 +62,9 @@ export class SSIMServer {
 			};
 
 			socket.on("login", (user) => {
-				name = user.name;
+				name = user.name.slice(0, 64);
 				threads = user.threads;
-				console.log(user.name, "logged in with", user.threads, "threads");
+				console.log(name, "logged in with", user.threads, "threads");
 				sendWork();
 				sendWork(); // send twice work as threads
 				sendStatus();
